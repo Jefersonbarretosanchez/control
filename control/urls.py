@@ -1,5 +1,5 @@
 """
-URL configuration for control project.
+URL configuration for djangoRequerimientos project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.0/topics/http/urls/
@@ -16,7 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path
+from requerimientos import views
+from requerimientos.views import *
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
+    path('login/', Login.as_view(), name='login'),
+    path('logout/', views.cerrar_sesion, name='logout'),
+    
+    path('', RequerimientosList.as_view(), name='requerimientos'),
+    path('create/', RequerimientosCreate.as_view(), name='crear'),
+    path('edit/<int:pk>/', RequerimientosUpdate.as_view(), name='editar'),
 ]
