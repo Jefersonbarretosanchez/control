@@ -11,9 +11,16 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.csrf import csrf_protect
 from django.views.generic import ListView, CreateView, UpdateView, FormView
 from .forms import RequerimientosForm,RequerimientosFormEdit
-from .models import Requerimientos
+from .models import Requerimientos, HistoricoGeneral
 
 # Create your views here.
+class Historico(LoginRequiredMixin,ListView):
+    model=Requerimientos
+    template_name='historico.html'
+    context_object_name='requerimientos'
+    queryset=HistoricoGeneral.objects.all().order_by('fecha_registro')
+    paginate_by=10
+
 class RequerimientosList(LoginRequiredMixin, ListView):
     """Funcion Lista Requerimientos En El Home"""
     model = Requerimientos
@@ -29,14 +36,19 @@ class RequerimientosCreate(LoginRequiredMixin, CreateView):
     form_class = RequerimientosForm
     success_url = reverse_lazy('requerimientos')
 
-    def post(self, request, *args, **kwargs):
-        form = self.form_class(request.POST)
-        if form.is_valid():
-            new_req = form.save(commit=False)
-            new_req.user = request.user
-            print(new_req)
-            new_req.save()
-            return redirect('requerimientos')
+    def form_valid(self, form):
+        response = super().form_valid(form)
+
+        HistoricoGeneral.objects.create(
+            usuario=self.request.user,
+            correo_usuario=self.request.user.email,
+            tipo_cambio="Creacion",
+            tipo_activo="Persona",
+            activo_modificado='Requerimiento',  # id de la persona
+            descripcion=f'Se creo el "requerimiento" "{
+                form.instance.requerimiento}"'
+        )
+        return response
 
 class RequerimientosUpdate(LoginRequiredMixin, UpdateView):
     """Actualiza Requerimientos"""
@@ -46,7 +58,21 @@ class RequerimientosUpdate(LoginRequiredMixin, UpdateView):
     success_url = reverse_lazy('requerimientos')
 
     def form_valid(self, form):
-        form.instance.user = self.request.user
+        if form.has_changed():
+            for field in form.changed_data:
+                original_value = form.initial[field]
+                current_value = form.cleaned_data[field]
+                HistoricoGeneral.objects.create(
+                    usuario=self.request.user,
+                    correo_usuario=self.request.user.email,
+                    tipo_cambio="Actualización",
+                    tipo_activo="Requerimiento",
+                    activo_modificado=field,
+                    valor_anterior=original_value,
+                    valor_nuevo=current_value,
+                    descripcion=f'Cambio en {field}: de {
+                        original_value} a {current_value}'
+                )
         return super().form_valid(form)
 
 class Login(FormView):

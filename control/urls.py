@@ -28,4 +28,5 @@ urlpatterns = [
     path('', RequerimientosList.as_view(), name='requerimientos'),
     path('create/', RequerimientosCreate.as_view(), name='crear'),
     path('edit/<int:pk>/', RequerimientosUpdate.as_view(), name='editar'),
+    path('historicos/',Historico.as_view(),name='historicos'),
 ]
